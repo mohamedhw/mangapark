@@ -166,9 +166,13 @@ def main(url, start, end):
         url_list = url_lists[name]
         if "." not in name:
             ch_name = f"{int(name):04d}"
-        # elif "." in name:
-            # temp_name = name.split(".")[0]
-            # ch_name = f"{int(temp_name):03}"
+        elif "." in name:
+            try:
+                temp_name = name.split(".")[0]
+                ch_name = f"{int(temp_name):04d}"
+            except:
+                temp_name = name.split(".")[1]
+                ch_name = f"{int(temp_name):04d}"
         else:
             ch_name = name
         os.makedirs(str(ch_name))
@@ -278,8 +282,7 @@ def after_first_choice(start, end):
             print("enter a valid answer!!!")
 
 
-# if __name__ == "__main__":
-def start():
+if __name__ == "__main__":
     start_chapter = None
     end_chapter = None
     manga_url = input("Enter a URL like 'https://mangapark.net/title/id/name/c1-en'\nURL: ")
