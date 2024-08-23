@@ -1,4 +1,4 @@
-# Project Name
+# SC-mangapark
 
 ## Overview
 
@@ -26,7 +26,7 @@ Follow these steps to set up the Python virtual environment and install the requ
      python -m venv env
     ```
 
-3.  **Activate the env**
+3.  **Activate the venv**
      - On Windows:
 
          ```bash
