@@ -1,4 +1,5 @@
 import os
+import zipfile
 import subprocess
 import requests
 import time
@@ -69,25 +70,29 @@ def get_chapter(driver, start, end):
         By.XPATH,
         f"//div[@class='grow grid gap-3 grid-cols-2 lg:grid-cols-6']//optgroup[@label='Chapters']/option",
     )
+
     for url in url_list:
         link = url.get_attribute("value")
         chapter_list.append(link)
 
-    start_index = chapter_list[0]
+    start_index = chapter_list[start]
+
+    vol_pattern = fr"vol-\d+-ch-"
+
     for ch in chapter_list:
-        if f"ch-{start}" in ch or f"chapter-{start}" in ch:
+        if f"ch-{start}" in ch or f"chapter-{start}" in ch or f"{vol_pattern}{start}" in ch:
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
-        elif f"ch-0{start}" in ch or f"chapter-0{start}" in ch:
+        elif f"ch-0{start}" in ch or f"chapter-0{start}" in ch or f"{vol_pattern}0{start}" in ch:
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
-        elif f"ch-00{start}" in ch or f"chapter-00{start}" in ch:
+        elif f"ch-00{start}" in ch or f"chapter-00{start}" in ch or f"{vol_pattern}00{start}" in ch:
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
-        elif f"ch-000{start}" in ch or f"chapter-000{start}" in ch:
+        elif f"ch-000{start}" in ch or f"chapter-000{start}" in ch or f"{vol_pattern}000{start}" in ch:
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
@@ -96,7 +101,7 @@ def get_chapter(driver, start, end):
 
 
     # chapter_links_list = chapter_list[start_index::]
-    if end >= 0:
+    if end is not None:
         chapter_links_list = chapter_list[start_index::]
         if end == 0:
             chapter_links_list = chapter_list[start_index::]
@@ -125,9 +130,7 @@ def get_chapter(driver, start, end):
                 else:
                     chapter_links_list = chapter_list[start_index::]
 
-
         return chapter_links_list
-
     else:
         return [chapter_list[start_index]]
 
@@ -154,16 +157,47 @@ def main(url, start, end):
     driver.get(url)
     time.sleep(2)
     chapter_list = get_chapter(driver, start, end)
+
     for page in chapter_list:
         driver.get(f"https://mangapark.net/{page}")
-        name_ = page.split("/")[-1].split("-")[2::]
-        name_ = ".".join(name_)
+
+        # Name the chapter acording to the name of the link 
+        # [ch, chapter, vol+(volnum)+ch, side+story]
+        name_ = page.split("/")[-1].split("-")
+        if name_[1] == "ch":
+            name_ = name_[2::]
+            name_ = ".".join(name_)
+
+        elif name_[1] == "chapter":
+            name_ = name_[2::]
+            name_ = ".".join(name_)
+
+        elif name_[1] == "vol":
+            name_ = name_[4::]
+            name_ = ".".join(name_)
+
+        elif name_[1] == "side":
+            name_ = name_[3::]
+            name_ = ".".join(name_)
+
+        else:
+            name_ = ".".join(name_)
+
+        try:
+            name_ = name_.split(":")[0]
+        except:
+            name_ = name_
+
+
         urls = get_urls(driver)
         url_lists[name_] = urls
 
     driver.quit()
+
+    # add placeholders[0] for the chapter name[dir name]
     for name in url_lists.keys():
         url_list = url_lists[name]
+
         if "." not in name:
             ch_name = f"{int(name):04d}"
         elif "." in name:
@@ -171,10 +205,14 @@ def main(url, start, end):
                 temp_name = name.split(".")[0]
                 ch_name = f"{int(temp_name):04d}"
             except:
-                temp_name = name.split(".")[1]
-                ch_name = f"{int(temp_name):04d}"
+                try:
+                    temp_name = name.split(".")[1]
+                    ch_name = f"{int(temp_name):04d}"
+                except:
+                    ch_name = name
         else:
             ch_name = name
+
         os.makedirs(str(ch_name))
         print(f"############### START CHAPTER {name} ###############")
         with ThreadPoolExecutor(max_workers=4) as executor:
@@ -189,23 +227,68 @@ def main(url, start, end):
                     print(f"Error during download: {e}")
 
 # handel the user initial choise of the number ofchapters
-def initial_user_choice(manga_url, number_choice, start_chapter, end_chapter):
+def initial_user_choice(manga_url, start_chapter, end_chapter):
+
+    while True:
+        print("Enter your choice (1 or 2):")
+        number_choice = input()
+        try:
+            number_choice = int(number_choice)
+            break
+        except:
+            print("That's not a valid number. Please try again.")
+
     if number_choice == 1:
-        start_chapter = int(input("Enter chapter number: "))
+        print("================================================================================")
+        print("NOT THE PROGRAM CAN NOT DOWNLOAD ANY CHAPTER WITH THE TAG 'SIDESTORY'")
+        print("================================================================================")
+
+        while True:
+            print("Enter chapter number:")
+            start_chapter = input()
+            try:
+                start_chapter = int(start_chapter)
+                break
+            except:
+                print("That's not a valid number. Please try again.")
+
         main(manga_url, start_chapter, end_chapter)
         return [start_chapter]
+
     elif number_choice == 2:
-        start_chapter = int(input("Enter start chapter: "))
-        end_chapter = int(input("Enter end chapter[0 all]: "))
+        print("================================================================================")
+        print("NOT THE PROGRAM CAN NOT NAME ANY CHAPTER WITH THE TAG 'SIDESTORY'")
+        print("================================================================================")
+
+        while True:
+            print("Enter start chapter number:")
+            start_chapter = input()
+            try:
+                start_chapter = int(start_chapter)
+                break
+            except:
+                print("That's not a valid number. Please try again.")
+        while True:
+            print("Enter end chapter[0 all]:")
+            end_chapter = input()
+            try:
+                end_chapter = int(end_chapter)
+                break
+            except:
+                print("That's not a valid number. Please try again.")
+
         main(manga_url, start_chapter, end_chapter)
         return[start_chapter, end_chapter]
+
     else:
+
         print("please enter a valid number !!!")
-        initial_user_choice(manga_url, number_choice, start_chapter, end_chapter)
+        initial_user_choice(manga_url, start_chapter, end_chapter)
 
 
 def start_server():
-    option = input("start server[Y-N]: ").lower()
+    print("start server[Y-N]:")
+    option = input().lower()
     if option == 'y':
         os.system("python -m http.server")
     elif option == 'n':
@@ -216,7 +299,8 @@ def start_server():
 
 
 def clear(dir_name, start_, end_):
-    clear_option = input("do you want to delete every thing not the .tar [Y-N]: ").lower()
+    print("do you want to delete every thing not the .tar [Y-N]:")
+    clear_option = input().lower()
     if clear_option == 'y':
         os.system(f"$(for i in {{{start_}..{end_}}};do rm -rf $i;done)")
         os.system(f"rm -rf '{dir_name}'")
@@ -231,7 +315,8 @@ def clear(dir_name, start_, end_):
 
 def create_tar(dir_name, start_, end_):
     while True:
-        tar_choice = input("turn to tar[Y-N]: ").lower()
+        print("turn to tar[Y-N]:")
+        tar_choice = input().lower()
         if tar_choice == "y":
             if os.path.isfile(f"'{dir_name}.tar'"):
                 os.system(f"rm -rf '{dir_name}.tar'")
@@ -246,8 +331,18 @@ def create_tar(dir_name, start_, end_):
 
 
 def create_zip(start_, end_):
+    for i in range(start_, end_ + 1):
+        folder_name = f"{i}"
+        zip_name = f"{i}.cbz"
+        dir_name = f"{i}"
+        with zipfile.ZipFile(zip_name, 'w') as zipf:
+            for root, _, files in os.walk(folder_name):
+                for file in files:
+                    zipf.write(os.path.join(root, file), arcname=file)
+        os.rename(zip_name, os.path.join(dir_name, zip_name))
     while True:
-        zip_choice = input("turn to cbz[Y-N]: ").lower()
+        print("turn to cbz[Y-N]:")
+        zip_choice = input().lower()
         if zip_choice == "y":
             print("enter the name of the manga:")
             dir_name = input("")
@@ -272,7 +367,8 @@ def after_first_choice(start, end):
     start_ = f"{start:04d}"
     end_ = f"{end:04d}"
     while True:
-        continue_choice = input("continue[Y-N]: ").lower()
+        print("continue (zip the files) (turn the files into '.tar') [Y-N]:")
+        continue_choice = input().lower()
         if continue_choice == "y":
             create_zip(start_, end_)
             break
@@ -285,11 +381,12 @@ def after_first_choice(start, end):
 if __name__ == "__main__":
     start_chapter = None
     end_chapter = None
-    manga_url = input("Enter a URL like 'https://mangapark.net/title/id/name/c1-en'\nURL: ")
+    print("Enter a URL like 'https://mangapark.net/title/id/name/c1-en'\nURL:")
+    manga_url = input()
     print("1. One chapter")
     print("2. Multiple chapters")
-    number_choice = int(input("Enter your choice (1 or 2): "))
-    cha = initial_user_choice(manga_url, number_choice, start_chapter, end_chapter)
+
+    cha = initial_user_choice(manga_url, start_chapter, end_chapter)
     start = cha[0]
     try:
         end = cha[1]
