@@ -1,8 +1,10 @@
 import os
 import zipfile
-import subprocess
+import tarfile
+# import subprocess
 import requests
 import time
+import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from selenium import webdriver
 from selenium.webdriver.common.by import By
@@ -231,7 +233,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 
     while True:
         print("Enter your choice (1 or 2):")
-        number_choice = input()
+        number_choice = input().strip()
         try:
             number_choice = int(number_choice)
             break
@@ -245,7 +247,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 
         while True:
             print("Enter chapter number:")
-            start_chapter = input()
+            start_chapter = input().strip()
             try:
                 start_chapter = int(start_chapter)
                 break
@@ -262,7 +264,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 
         while True:
             print("Enter start chapter number:")
-            start_chapter = input()
+            start_chapter = input().strip()
             try:
                 start_chapter = int(start_chapter)
                 break
@@ -270,7 +272,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
                 print("That's not a valid number. Please try again.")
         while True:
             print("Enter end chapter[0 all]:")
-            end_chapter = input()
+            end_chapter = input().strip()
             try:
                 end_chapter = int(end_chapter)
                 break
@@ -287,79 +289,129 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 
 
 def start_server():
-    print("start server[Y-N]:")
-    option = input().lower()
+    print("start server [Y-N]:")
+    option = input().strip().lower()
     if option == 'y':
-        os.system("python -m http.server")
+        try:
+            os.system("python -m http.server")
+        except Exception as e:
+            print(f"An error occurred: {e}")
     elif option == 'n':
         return
     else:
-        print("enter a valid answer!!!")
+        print("Enter a valid answer!!!")
         start_server()
 
+# def clear(dir_name, start_, end_):
+#     print("do you want to delete every thing not the .tar [Y-N]:")
+#     clear_option = input().lower()
+#     if clear_option == 'y':
+#         os.system(f"$(for i in {{{start_}..{end_}}};do rm -rf $i;done)")
+#         os.system(f"rm -rf '{dir_name}'")
+#         start_server()
+#         return
+#     elif clear_option == 'n':
+#         return
+#     else:
+#         print("enter a valid answer!!!")
+#         clear(dir_name, start_, end_)
 
-def clear(dir_name, start_, end_):
-    print("do you want to delete every thing not the .tar [Y-N]:")
-    clear_option = input().lower()
-    if clear_option == 'y':
-        os.system(f"$(for i in {{{start_}..{end_}}};do rm -rf $i;done)")
-        os.system(f"rm -rf '{dir_name}'")
-        start_server()
-        return
-    elif clear_option == 'n':
-        return
-    else:
-        print("enter a valid answer!!!")
-        clear(dir_name, start_, end_)
 
+def create_tar(start_, end_):
+    n_1 = random.randint(1, 2000)
+    n_2 = random.randint(1, 2000)
+    n_3 = random.randint(1, 2000)
+    n_4 = random.randint(1, 2000)
 
-def create_tar(dir_name, start_, end_):
     while True:
         print("turn to tar[Y-N]:")
-        tar_choice = input().lower()
+        tar_choice = input().strip().lower()
         if tar_choice == "y":
-            if os.path.isfile(f"'{dir_name}.tar'"):
-                os.system(f"rm -rf '{dir_name}.tar'")
-            command_2 = f"tar -cf '{dir_name}.tar' '{dir_name}'"
-            subprocess.run(command_2, shell=True, capture_output=True, text=True)
-            clear(dir_name, start_, end_)
-            return
+            while True:
+                print("turn to remove all .cbz after the .tar created[Y-N]:")
+                clean_choice = input().strip().lower()
+                if clean_choice == 'y':
+                    with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", 'w') as tarf:
+                        for i in range(int(start_), int(end_) + 1):
+                            prefix = f"{i:04}.cbz"
+                            tarf.add(f"{prefix}")
+                            os.remove(prefix)
+                    return
+                elif clean_choice == 'n':
+                    with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", 'w') as tarf:
+                        for i in range(int(start_), int(end_) + 1):
+                            prefix = f"{i:04}.cbz"
+                            tarf.add(f"{prefix}")
+                    return
+                else:
+                    print("not a valid answer!!!")
         elif tar_choice == "n":
             return
         else:
             print("not a valid answer!!!")
 
 
+
+    # while True:
+    #     print("turn to tar[Y-N]:")
+    #     tar_choice = input().lower()
+    #     if tar_choice == "y":
+    #         if os.path.isfile(f"'{dir_name}.tar'"):
+    #             os.system(f"rm -rf '{dir_name}.tar'")
+    #         command_2 = f"tar -cf '{dir_name}.tar' '{dir_name}'"
+    #         subprocess.run(command_2, shell=True, capture_output=True, text=True)
+    #         clear(dir_name, start_, end_)
+    #         return
+    #     elif tar_choice == "n":
+    #         return
+    #     else:
+    #         print("not a valid answer!!!")
+
+
 def create_zip(start_, end_):
-    for i in range(start_, end_ + 1):
-        folder_name = f"{i}"
-        zip_name = f"{i}.cbz"
-        dir_name = f"{i}"
-        with zipfile.ZipFile(zip_name, 'w') as zipf:
-            for root, _, files in os.walk(folder_name):
-                for file in files:
-                    zipf.write(os.path.join(root, file), arcname=file)
-        os.rename(zip_name, os.path.join(dir_name, zip_name))
     while True:
         print("turn to cbz[Y-N]:")
-        zip_choice = input().lower()
+        zip_choice = input().strip().lower()
         if zip_choice == "y":
-            print("enter the name of the manga:")
-            dir_name = input("")
-            dir_name = dir_name.replace(" ", "_")
-
-            if os.path.isdir(dir_name):
-                pass
-            else:
-                os.system(f"mkdir '{dir_name}'")
-            command_1 = f"for i in {{{start_}..{end_}}}; do zip $i.cbz $i/*; done && mv *.cbz '{dir_name}'"
-            subprocess.run(command_1, shell=True, capture_output=True, text=True)
-            create_tar(dir_name, start_, end_)
+            for i in range(int(start_), int(end_) + 1):
+                prefix = f"{i:04}"
+                for dir_name in os.listdir():
+                    if dir_name.startswith(prefix) and os.path.isdir(dir_name):
+                        zip_name = f"{dir_name}.cbz"
+                        with zipfile.ZipFile(zip_name, 'w') as zipf:
+                            for root, _, files in os.walk(dir_name):
+                                files.sort()
+                                for file in files:
+                                    zipf.write(os.path.join(root, file), arcname=file)
+                        os.rename(zip_name, os.path.join(zip_name))
+            create_tar(start_, end_)
             return
         elif zip_choice == "n":
             return
         else:
             print("not a valid answer!!!")
+
+
+    # while True:
+    #     print("turn to cbz[Y-N]:")
+    #     zip_choice = input().lower()
+    #     if zip_choice == "y":
+    #         print("enter the name of the manga:")
+    #         dir_name = input("")
+    #         dir_name = dir_name.replace(" ", "_")
+    #
+    #         if os.path.isdir(dir_name):
+    #             pass
+    #         else:
+    #             os.system(f"mkdir '{dir_name}'")
+    #         command_1 = f"for i in {{{start_}..{end_}}}; do zip $i.cbz $i/*; done && mv *.cbz '{dir_name}'"
+    #         subprocess.run(command_1, shell=True, capture_output=True, text=True)
+    #         create_tar(dir_name, start_, end_)
+    #         return
+    #     elif zip_choice == "n":
+    #         return
+    #     else:
+    #         print("not a valid answer!!!")
 
 
 # handel the after download 
@@ -368,7 +420,7 @@ def after_first_choice(start, end):
     end_ = f"{end:04d}"
     while True:
         print("continue (zip the files) (turn the files into '.tar') [Y-N]:")
-        continue_choice = input().lower()
+        continue_choice = input().strip().lower()
         if continue_choice == "y":
             create_zip(start_, end_)
             break
@@ -382,7 +434,7 @@ if __name__ == "__main__":
     start_chapter = None
     end_chapter = None
     print("Enter a URL like 'https://mangapark.net/title/id/name/c1-en'\nURL:")
-    manga_url = input()
+    manga_url = input().strip()
     print("1. One chapter")
     print("2. Multiple chapters")
 
