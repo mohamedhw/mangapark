@@ -242,7 +242,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 
     if number_choice == 1:
         print("================================================================================")
-        print("NOT THE PROGRAM CAN NOT DOWNLOAD ANY CHAPTER WITH THE TAG 'SIDESTORY'")
+        print("NOTE THE PROGRAM CAN NOT DOWNLOAD ANY CHAPTER WITH THE TAG 'SIDESTORY'")
         print("================================================================================")
 
         while True:
@@ -259,7 +259,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 
     elif number_choice == 2:
         print("================================================================================")
-        print("NOT THE PROGRAM CAN NOT NAME ANY CHAPTER WITH THE TAG 'SIDESTORY'")
+        print("NOTE THE PROGRAM CAN NOT NAME ANY CHAPTER WITH THE TAG 'SIDESTORY'")
         print("================================================================================")
 
         while True:
@@ -328,7 +328,7 @@ def create_tar(start_, end_):
         tar_choice = input().strip().lower()
         if tar_choice == "y":
             while True:
-                print("turn to remove all .cbz after the .tar created[Y-N]:")
+                print("remove all .cbz after the .tar created[Y-N]:")
                 clean_choice = input().strip().lower()
                 if clean_choice == 'y':
                     with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", 'w') as tarf:
