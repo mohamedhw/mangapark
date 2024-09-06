@@ -79,8 +79,6 @@ def get_chapter(driver, start, end):
 
     global end_ch
     end_ch = len(chapter_list)
-    print(f"========{end_ch}=================================================================")
-    print(f"========{len(chapter_list)}=================================================================")
     start_index = chapter_list[start]
 
     vol_pattern = fr"vol-\d+-ch-"
@@ -370,8 +368,6 @@ def create_zip(start_, end_):
 
 # handel the after download 
 def after_first_choice(start, end):
-    print(f"{end_chapter}=================================================================")
-    print(f"{end}=================================================================")
     start_ = f"{start:04d}"
     if end == 0:
         end_ = f"{end_ch:04d}"
