@@ -1,7 +1,6 @@
 import os
 import zipfile
 import tarfile
-# import subprocess
 import requests
 import time
 import random
@@ -10,6 +9,7 @@ from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
+end_ch = None
 
 def get_urls(driver):
     time.sleep(5)
@@ -77,6 +77,10 @@ def get_chapter(driver, start, end):
         link = url.get_attribute("value")
         chapter_list.append(link)
 
+    global end_ch
+    end_ch = len(chapter_list)
+    print(f"========{end_ch}=================================================================")
+    print(f"========{len(chapter_list)}=================================================================")
     start_index = chapter_list[start]
 
     vol_pattern = fr"vol-\d+-ch-"
@@ -202,16 +206,16 @@ def main(url, start, end):
 
         if "." not in name:
             ch_name = f"{int(name):04d}"
-        elif "." in name:
-            try:
-                temp_name = name.split(".")[0]
-                ch_name = f"{int(temp_name):04d}"
-            except:
-                try:
-                    temp_name = name.split(".")[1]
-                    ch_name = f"{int(temp_name):04d}"
-                except:
-                    ch_name = name
+        # elif "." in name:
+        #     try:
+        #         temp_name = name.split(".")[0]
+        #         ch_name = f"{int(temp_name):04d}"
+        #     except:
+        #         try:
+        #             temp_name = name.split(".")[1]
+        #             ch_name = f"{int(temp_name):04d}"
+        #         except:
+        #             ch_name = name
         else:
             ch_name = name
 
@@ -302,19 +306,6 @@ def start_server():
         print("Enter a valid answer!!!")
         start_server()
 
-# def clear(dir_name, start_, end_):
-#     print("do you want to delete every thing not the .tar [Y-N]:")
-#     clear_option = input().lower()
-#     if clear_option == 'y':
-#         os.system(f"$(for i in {{{start_}..{end_}}};do rm -rf $i;done)")
-#         os.system(f"rm -rf '{dir_name}'")
-#         start_server()
-#         return
-#     elif clear_option == 'n':
-#         return
-#     else:
-#         print("enter a valid answer!!!")
-#         clear(dir_name, start_, end_)
 
 
 def create_tar(start_, end_):
@@ -352,21 +343,6 @@ def create_tar(start_, end_):
 
 
 
-    # while True:
-    #     print("turn to tar[Y-N]:")
-    #     tar_choice = input().lower()
-    #     if tar_choice == "y":
-    #         if os.path.isfile(f"'{dir_name}.tar'"):
-    #             os.system(f"rm -rf '{dir_name}.tar'")
-    #         command_2 = f"tar -cf '{dir_name}.tar' '{dir_name}'"
-    #         subprocess.run(command_2, shell=True, capture_output=True, text=True)
-    #         clear(dir_name, start_, end_)
-    #         return
-    #     elif tar_choice == "n":
-    #         return
-    #     else:
-    #         print("not a valid answer!!!")
-
 
 def create_zip(start_, end_):
     while True:
@@ -392,32 +368,16 @@ def create_zip(start_, end_):
             print("not a valid answer!!!")
 
 
-    # while True:
-    #     print("turn to cbz[Y-N]:")
-    #     zip_choice = input().lower()
-    #     if zip_choice == "y":
-    #         print("enter the name of the manga:")
-    #         dir_name = input("")
-    #         dir_name = dir_name.replace(" ", "_")
-    #
-    #         if os.path.isdir(dir_name):
-    #             pass
-    #         else:
-    #             os.system(f"mkdir '{dir_name}'")
-    #         command_1 = f"for i in {{{start_}..{end_}}}; do zip $i.cbz $i/*; done && mv *.cbz '{dir_name}'"
-    #         subprocess.run(command_1, shell=True, capture_output=True, text=True)
-    #         create_tar(dir_name, start_, end_)
-    #         return
-    #     elif zip_choice == "n":
-    #         return
-    #     else:
-    #         print("not a valid answer!!!")
-
-
 # handel the after download 
 def after_first_choice(start, end):
+    print(f"{end_chapter}=================================================================")
+    print(f"{end}=================================================================")
     start_ = f"{start:04d}"
-    end_ = f"{end:04d}"
+    if end == 0:
+        end_ = f"{end_ch:04d}"
+    else:
+        end_ = f"{end:04d}"
+
     while True:
         print("continue (zip the files) (turn the files into '.tar') [Y-N]:")
         continue_choice = input().strip().lower()
