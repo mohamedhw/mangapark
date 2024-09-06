@@ -10,6 +10,7 @@ from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 end_ch = None
+ch_name_g = None
 
 def get_urls(driver):
     time.sleep(5)
@@ -66,20 +67,25 @@ def get_pics_num(driver):
 
 def get_chapter(driver, start, end):
     time.sleep(5)
-
     chapter_list = []
-    url_list = driver.find_elements(
-        By.XPATH,
-        f"//div[@class='grow grid gap-3 grid-cols-2 lg:grid-cols-6']//optgroup[@label='Chapters']/option",
-    )
+    print(f"{start}=============")
+    try:
+        int_url = start.split("/")[3::]
+        start = "/".join(int_url)
+        chapter_list.append(start)
+    except:
+        url_list = driver.find_elements(
+            By.XPATH,
+            f"//div[@class='grow grid gap-3 grid-cols-2 lg:grid-cols-6']//optgroup[@label='Chapters']/option",
+        )
 
-    for url in url_list:
-        link = url.get_attribute("value")
-        chapter_list.append(link)
+        for url in url_list:
+            link = url.get_attribute("value")
+            chapter_list.append(link)
 
-    global end_ch
-    end_ch = len(chapter_list)
-    start_index = chapter_list[start]
+        global end_ch
+        end_ch = len(chapter_list)
+        start_index = chapter_list[start]
 
     vol_pattern = fr"vol-\d+-ch-"
 
@@ -218,6 +224,8 @@ def main(url, start, end):
             ch_name = name
 
         os.makedirs(str(ch_name))
+        global ch_name_g
+        ch_name_g = int(ch_name)
         print(f"############### START CHAPTER {name} ###############")
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [
@@ -248,13 +256,27 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
         print("================================================================================")
 
         while True:
-            print("Enter chapter number:")
-            start_chapter = input().strip()
-            try:
-                start_chapter = int(start_chapter)
+            print("1- Enter chapter URL")
+            print("2- Enter chapter number")
+            chapter_inf = input().strip()
+            
+            if chapter_inf == "1":
+                print("Enter chapter URL:")
+                start_chapter = input().strip()
+                if "/" in start_chapter:
+                    break
+            elif chapter_inf == "2":
+                while True:
+                    print("Enter chapter number:")
+                    start_chapter = input().strip()
+                    try:
+                        start_chapter = int(start_chapter)
+                        break
+                    except:
+                        print("That's not a valid number. Please try again.")
                 break
-            except:
-                print("That's not a valid number. Please try again.")
+
+
 
         main(manga_url, start_chapter, end_chapter)
         return [start_chapter]
@@ -343,39 +365,61 @@ def create_tar(start_, end_):
 
 
 def create_zip(start_, end_):
-    while True:
-        print("turn to cbz[Y-N]:")
-        zip_choice = input().strip().lower()
-        if zip_choice == "y":
-            for i in range(int(start_), int(end_) + 1):
-                prefix = f"{i:04}"
-                for dir_name in os.listdir():
-                    if dir_name.startswith(prefix) and os.path.isdir(dir_name):
-                        zip_name = f"{dir_name}.cbz"
-                        with zipfile.ZipFile(zip_name, 'w') as zipf:
-                            for root, _, files in os.walk(dir_name):
-                                files.sort()
-                                for file in files:
-                                    zipf.write(os.path.join(root, file), arcname=file)
-                        os.rename(zip_name, os.path.join(zip_name))
-            create_tar(start_, end_)
-            return
-        elif zip_choice == "n":
-            return
-        else:
-            print("not a valid answer!!!")
+    if end_ is not None and end_ != start_:
+        while True:
+            print("turn to cbz[Y-N]:")
+            zip_choice = input().strip().lower()
+            if zip_choice == "y":
+                    for i in range(int(start_), int(end_) + 1):
+                        prefix = f"{i:04}"
+                        for dir_name in os.listdir():
+                            if dir_name.startswith(prefix) and os.path.isdir(dir_name):
+                                zip_name = f"{dir_name}.cbz"
+                                with zipfile.ZipFile(zip_name, 'w') as zipf:
+                                    for root, _, files in os.walk(dir_name):
+                                        files.sort()
+                                        for file in files:
+                                            zipf.write(os.path.join(root, file), arcname=file)
+                                os.rename(zip_name, os.path.join(zip_name))
+                    create_tar(start_, end_)
+                    return
+            elif zip_choice == "n":
+                return
+            else:
+                print("not a valid answer!!!")
+    else:
+        prefix = f"{ch_name_g:04d}"
+        for dir_name in os.listdir():
+            if dir_name.startswith(prefix) and os.path.isdir(dir_name):
+                zip_name = f"{dir_name}.cbz"
+                with zipfile.ZipFile(zip_name, 'w') as zipf:
+                    for root, _, files in os.walk(dir_name):
+                        files.sort()
+                        for file in files:
+                            zipf.write(os.path.join(root, file), arcname=file)
+                os.rename(zip_name, os.path.join(zip_name))
+                return
 
 
 # handel the after download 
 def after_first_choice(start, end):
-    start_ = f"{start:04d}"
+    try:
+        start_ = f"{start:04d}"
+    except:
+        start_ = f"{ch_name_g:04d}"
+
     if end == 0:
         end_ = f"{end_ch:04d}"
+    elif type(end) is str and "/" in end:
+        end_ = None
     else:
         end_ = f"{end:04d}"
 
     while True:
-        print("continue (zip the files) (turn the files into '.tar') [Y-N]:")
+        if end_ is not None and end_ != start_:
+            print("continue (zip the files) (turn the files into '.tar') [Y-N]:")
+        else:
+            print("turn to cbz[Y-N]::")
         continue_choice = input().strip().lower()
         if continue_choice == "y":
             create_zip(start_, end_)
