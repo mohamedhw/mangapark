@@ -223,9 +223,25 @@ def main(url, start, end):
         else:
             ch_name = name
 
-        os.makedirs(str(ch_name))
         global ch_name_g
-        ch_name_g = int(ch_name)
+        try:
+            ch_name_g = int(ch_name)
+        except:
+            try:
+                ch_name_g = float(ch_name)
+            except:
+                if "." in name:
+                    try:
+                        temp_name = name.split(".")[0]
+                        ch_name = f"{int(temp_name):04d}"
+                    except:
+                        try:
+                            temp_name = name.split(".")[1]
+                            ch_name = f"{int(temp_name):04d}"
+                        except:
+                            ch_name = name
+                    ch_name_g = int(ch_name)
+        os.makedirs(str(ch_name))
         print(f"############### START CHAPTER {name} ###############")
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [
