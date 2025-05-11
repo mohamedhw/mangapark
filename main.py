@@ -27,7 +27,8 @@ def get_urls(driver):
         )
     except:
         imgs = driver.find_elements(
-            By.XPATH, "//div[@class='flex flex-col items-center bg-base-100']/div//img"
+            By.XPATH, 
+            "//div[@data-name='image-item']//img[@class='w-full h-full']"
         )
     return [img.get_attribute("src") for img in imgs]
 
@@ -59,6 +60,7 @@ def get_pics_num(driver):
         By.XPATH,
         "//div[@id='viewer']/div/div[@class='text-center text-muted small text-nowrap']",
     )
+    print("pics_num", pics_number)
     if pics_number:
         pics_number_txt = pics_number.text
         pics_num = pics_number_txt.split("/")[-1].strip()
@@ -71,14 +73,14 @@ def get_chapter(driver, start, end):
     print(f"{start}=============")
     try:
         int_url = start.split("/")[3::]
+        
         start = "/".join(int_url)
         chapter_list.append(start)
     except:
         url_list = driver.find_elements(
             By.XPATH,
-            f"//div[@class='grow grid gap-3 grid-cols-2 lg:grid-cols-6']//optgroup[@label='Chapters']/option",
+            "//div[contains(@class, 'grow grid gap-5 grid-cols-2 lg:grid-cols-7')]//select/option"
         )
-
         for url in url_list:
             link = url.get_attribute("value")
             chapter_list.append(link)
@@ -159,10 +161,23 @@ def get_setting(driver):
 def main(url, start, end):
     url_lists = {}
     chrome_options = Options()
+    options = webdriver.ChromeOptions()
+
     prefs = {"profile.managed_default_content_settings.images": 2}
     chrome_options.add_experimental_option("prefs", prefs)
-    chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
-    driver = webdriver.Chrome(options=chrome_options)
+    # chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
+    # driver = webdriver.Chrome(options=chrome_options)
+
+    options.add_argument('--blink-settings=imagesEnabled=false')
+    options.add_experimental_option(
+        "prefs", {"profile.managed_default_content_settings.images": 2}
+    )
+    options.add_argument("--no-sandbox")
+    options.binary_location = '/usr/bin/brave'
+    print("Initializing Chrome WebDriver...")
+    driver = webdriver.Chrome(options=options)
+
+
     get_setting(driver)
     driver.get(url)
     time.sleep(2)
@@ -174,6 +189,7 @@ def main(url, start, end):
         # Name the chapter acording to the name of the link 
         # [ch, chapter, vol+(volnum)+ch, side+story]
         name_ = page.split("/")[-1].split("-")
+        print("========",name_) 
         if name_[1] == "ch":
             name_ = name_[2::]
             name_ = ".".join(name_)
@@ -275,7 +291,7 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
             print("1- Enter chapter URL")
             print("2- Enter chapter number")
             chapter_inf = input().strip()
-            
+
             if chapter_inf == "1":
                 print("Enter chapter URL:")
                 start_chapter = input().strip()
