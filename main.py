@@ -4,13 +4,18 @@ import tarfile
 import requests
 import time
 import random
+
 from concurrent.futures import ThreadPoolExecutor, as_completed
+
+import undetected_chromedriver as uc
+
 from selenium import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.chrome.options import Options
 
 end_ch = None
 ch_name_g = None
+
 
 def get_urls(driver):
     time.sleep(5)
@@ -27,8 +32,7 @@ def get_urls(driver):
         )
     except:
         imgs = driver.find_elements(
-            By.XPATH, 
-            "//div[@data-name='image-item']//img[@class='w-full h-full']"
+            By.XPATH, "//div[@data-name='image-item']//img[@class='w-full h-full']"
         )
     return [img.get_attribute("src") for img in imgs]
 
@@ -55,6 +59,7 @@ def get_img(url, dir, name):
         print(f"Failed to download {url}: {e}")
         get_img(url, dir, name)
 
+
 def get_pics_num(driver):
     pics_number = driver.find_element(
         By.XPATH,
@@ -73,13 +78,13 @@ def get_chapter(driver, start, end):
     print(f"{start}=============")
     try:
         int_url = start.split("/")[3::]
-        
+
         start = "/".join(int_url)
         chapter_list.append(start)
     except:
         url_list = driver.find_elements(
             By.XPATH,
-            "//div[contains(@class, 'grow grid gap-5 grid-cols-2 lg:grid-cols-7')]//select/option"
+            "//div[contains(@class, 'grow grid gap-5 grid-cols-2 lg:grid-cols-7')]//select/option",
         )
         for url in url_list:
             link = url.get_attribute("value")
@@ -89,28 +94,43 @@ def get_chapter(driver, start, end):
         end_ch = len(chapter_list)
         start_index = chapter_list[start]
 
-    vol_pattern = fr"vol-\d+-ch-"
+    vol_pattern = rf"vol-\d+-ch-"
 
     for ch in chapter_list:
-        if f"ch-{start}" in ch or f"chapter-{start}" in ch or f"{vol_pattern}{start}" in ch:
+        if (
+            f"ch-{start}" in ch
+            or f"chapter-{start}" in ch
+            or f"{vol_pattern}{start}" in ch
+        ):
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
-        elif f"ch-0{start}" in ch or f"chapter-0{start}" in ch or f"{vol_pattern}0{start}" in ch:
+        elif (
+            f"ch-0{start}" in ch
+            or f"chapter-0{start}" in ch
+            or f"{vol_pattern}0{start}" in ch
+        ):
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
-        elif f"ch-00{start}" in ch or f"chapter-00{start}" in ch or f"{vol_pattern}00{start}" in ch:
+        elif (
+            f"ch-00{start}" in ch
+            or f"chapter-00{start}" in ch
+            or f"{vol_pattern}00{start}" in ch
+        ):
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
-        elif f"ch-000{start}" in ch or f"chapter-000{start}" in ch or f"{vol_pattern}000{start}" in ch:
+        elif (
+            f"ch-000{start}" in ch
+            or f"chapter-000{start}" in ch
+            or f"{vol_pattern}000{start}" in ch
+        ):
             first_url = ch
             start_index = chapter_list.index(first_url)
             break
         else:
             start_index = 0
-
 
     # chapter_links_list = chapter_list[start_index::]
     if end is not None:
@@ -161,22 +181,23 @@ def get_setting(driver):
 def main(url, start, end):
     url_lists = {}
     chrome_options = Options()
-    options = webdriver.ChromeOptions()
+    options = uc.ChromeOptions()
+
+    options.add_argument("--headless")
 
     prefs = {"profile.managed_default_content_settings.images": 2}
     chrome_options.add_experimental_option("prefs", prefs)
     # chrome_options.add_argument("--disable-gpu")  # Disable GPU acceleration
     # driver = webdriver.Chrome(options=chrome_options)
 
-    options.add_argument('--blink-settings=imagesEnabled=false')
+    options.add_argument("--blink-settings=imagesEnabled=false")
     options.add_experimental_option(
         "prefs", {"profile.managed_default_content_settings.images": 2}
     )
     options.add_argument("--no-sandbox")
-    options.binary_location = '/usr/bin/brave'
+    options.binary_location = "/usr/bin/brave"
     print("Initializing Chrome WebDriver...")
-    driver = webdriver.Chrome(options=options)
-
+    driver = uc.Chrome(options=options)
 
     get_setting(driver)
     driver.get(url)
@@ -186,10 +207,10 @@ def main(url, start, end):
     for page in chapter_list:
         driver.get(f"https://mangapark.net/{page}")
 
-        # Name the chapter acording to the name of the link 
+        # Name the chapter acording to the name of the link
         # [ch, chapter, vol+(volnum)+ch, side+story]
         name_ = page.split("/")[-1].split("-")
-        print("========",name_) 
+        print("========", name_)
         if name_[1] == "ch":
             name_ = name_[2::]
             name_ = ".".join(name_)
@@ -213,7 +234,6 @@ def main(url, start, end):
             name_ = name_.split(":")[0]
         except:
             name_ = name_
-
 
         urls = get_urls(driver)
         url_lists[name_] = urls
@@ -261,7 +281,7 @@ def main(url, start, end):
         print(f"############### START CHAPTER {name} ###############")
         with ThreadPoolExecutor(max_workers=4) as executor:
             futures = [
-                    executor.submit(get_img, url_, ch_name, f"{index:03d}")
+                executor.submit(get_img, url_, ch_name, f"{index:03d}")
                 for index, url_ in enumerate(url_list, start=1)
             ]
             for future in as_completed(futures):
@@ -270,9 +290,9 @@ def main(url, start, end):
                 except Exception as e:
                     print(f"Error during download: {e}")
 
+
 # handel the user initial choise of the number ofchapters
 def initial_user_choice(manga_url, start_chapter, end_chapter):
-
     while True:
         print("Enter your choice (1 or 2):")
         number_choice = input().strip()
@@ -283,9 +303,13 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
             print("That's not a valid number. Please try again.")
 
     if number_choice == 1:
-        print("================================================================================")
+        print(
+            "================================================================================"
+        )
         print("NOTE THE PROGRAM CAN NOT DOWNLOAD ANY CHAPTER WITH THE TAG 'SIDESTORY'")
-        print("================================================================================")
+        print(
+            "================================================================================"
+        )
 
         while True:
             print("1- Enter chapter URL")
@@ -308,15 +332,20 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
                         print("That's not a valid number. Please try again.")
                 break
 
-
-
+        print(manga_url)
+        print(start_chapter)
+        print(end_chapter)
         main(manga_url, start_chapter, end_chapter)
         return [start_chapter]
 
     elif number_choice == 2:
-        print("================================================================================")
+        print(
+            "================================================================================"
+        )
         print("NOTE THE PROGRAM CAN NOT NAME ANY CHAPTER WITH THE TAG 'SIDESTORY'")
-        print("================================================================================")
+        print(
+            "================================================================================"
+        )
 
         while True:
             print("Enter start chapter number:")
@@ -336,10 +365,9 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
                 print("That's not a valid number. Please try again.")
 
         main(manga_url, start_chapter, end_chapter)
-        return[start_chapter, end_chapter]
+        return [start_chapter, end_chapter]
 
     else:
-
         print("please enter a valid number !!!")
         initial_user_choice(manga_url, start_chapter, end_chapter)
 
@@ -347,17 +375,16 @@ def initial_user_choice(manga_url, start_chapter, end_chapter):
 def start_server():
     print("start server [Y-N]:")
     option = input().strip().lower()
-    if option == 'y':
+    if option == "y":
         try:
             os.system("python -m http.server")
         except Exception as e:
             print(f"An error occurred: {e}")
-    elif option == 'n':
+    elif option == "n":
         return
     else:
         print("Enter a valid answer!!!")
         start_server()
-
 
 
 def create_tar(start_, end_):
@@ -373,15 +400,15 @@ def create_tar(start_, end_):
             while True:
                 print("remove all .cbz after the .tar created[Y-N]:")
                 clean_choice = input().strip().lower()
-                if clean_choice == 'y':
-                    with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", 'w') as tarf:
+                if clean_choice == "y":
+                    with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", "w") as tarf:
                         for i in range(int(start_), int(end_) + 1):
                             prefix = f"{i:04}.cbz"
                             tarf.add(f"{prefix}")
                             os.remove(prefix)
                     return
-                elif clean_choice == 'n':
-                    with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", 'w') as tarf:
+                elif clean_choice == "n":
+                    with tarfile.open(f"{n_1}{n_2}{n_3}{n_4}.tar", "w") as tarf:
                         for i in range(int(start_), int(end_) + 1):
                             prefix = f"{i:04}.cbz"
                             tarf.add(f"{prefix}")
@@ -394,27 +421,27 @@ def create_tar(start_, end_):
             print("not a valid answer!!!")
 
 
-
-
 def create_zip(start_, end_):
     if end_ is not None and end_ != start_:
         while True:
             print("turn to cbz[Y-N]:")
             zip_choice = input().strip().lower()
             if zip_choice == "y":
-                    for i in range(int(start_), int(end_) + 1):
-                        prefix = f"{i:04}"
-                        for dir_name in os.listdir():
-                            if dir_name.startswith(prefix) and os.path.isdir(dir_name):
-                                zip_name = f"{dir_name}.cbz"
-                                with zipfile.ZipFile(zip_name, 'w') as zipf:
-                                    for root, _, files in os.walk(dir_name):
-                                        files.sort()
-                                        for file in files:
-                                            zipf.write(os.path.join(root, file), arcname=file)
-                                os.rename(zip_name, os.path.join(zip_name))
-                    create_tar(start_, end_)
-                    return
+                for i in range(int(start_), int(end_) + 1):
+                    prefix = f"{i:04}"
+                    for dir_name in os.listdir():
+                        if dir_name.startswith(prefix) and os.path.isdir(dir_name):
+                            zip_name = f"{dir_name}.cbz"
+                            with zipfile.ZipFile(zip_name, "w") as zipf:
+                                for root, _, files in os.walk(dir_name):
+                                    files.sort()
+                                    for file in files:
+                                        zipf.write(
+                                            os.path.join(root, file), arcname=file
+                                        )
+                            os.rename(zip_name, os.path.join(zip_name))
+                create_tar(start_, end_)
+                return
             elif zip_choice == "n":
                 return
             else:
@@ -424,7 +451,7 @@ def create_zip(start_, end_):
         for dir_name in os.listdir():
             if dir_name.startswith(prefix) and os.path.isdir(dir_name):
                 zip_name = f"{dir_name}.cbz"
-                with zipfile.ZipFile(zip_name, 'w') as zipf:
+                with zipfile.ZipFile(zip_name, "w") as zipf:
                     for root, _, files in os.walk(dir_name):
                         files.sort()
                         for file in files:
@@ -433,7 +460,7 @@ def create_zip(start_, end_):
                 return
 
 
-# handel the after download 
+# handel the after download
 def after_first_choice(start, end):
     try:
         start_ = f"{start:04d}"
